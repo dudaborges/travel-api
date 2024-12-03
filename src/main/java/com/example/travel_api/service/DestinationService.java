@@ -1,52 +1,47 @@
 package com.example.travel_api.service;
 
 import com.example.travel_api.model.Destination;
+import com.example.travel_api.repository.DestinationRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
 public class DestinationService {
-    private List<Destination> destinations = new ArrayList<>();
+    @Autowired
+    private DestinationRepository destinationRepository;
 
     public List<Destination> getAllDestinations() {
-        return destinations;
+        return destinationRepository.findAll();
     }
 
     public Destination getDestinationById(Long id) {
-        return destinations.stream().filter(d -> d.getId().equals(id)).findFirst().orElse(null);
+        return destinationRepository.findById(id).orElse(null);
     }
 
     public List<Destination> searchDestinations(String query) {
-        List<Destination> result = new ArrayList<>();
-        for (Destination d : destinations) {
-            if (d.getName().contains(query) || d.getLocation().contains(query)) {
-                result.add(d);
-            }
-        }
-        return result;
+        return destinationRepository.findByNameContainingOrLocationContaining(query, query);
     }
 
     public Destination addDestination(Destination destination) {
-        destination.setId((long) (destinations.size() + 1));
-        destinations.add(destination);
-        return destination;
+        return destinationRepository.save(destination);
     }
 
     public boolean deleteDestination(Long id) {
-        return destinations.removeIf(d -> d.getId().equals(id));
+        if (destinationRepository.existsById(id)) {
+            destinationRepository.deleteById(id);
+            return true;
+        }
+        return false;
     }
 
     public Destination updateDestination(Long id, Destination destination) {
-        Destination existingDestination = getDestinationById(id);
-        if (existingDestination != null) {
-            existingDestination.setName(destination.getName());
-            existingDestination.setLocation(destination.getLocation());
-            existingDestination.setDescription(destination.getDescription());
-            existingDestination.setRating(destination.getRating());
+        if (destinationRepository.existsById(id)) {
+            destination.setId(id);
+            return destinationRepository.save(destination);
         }
-        return existingDestination;
+        return null;
     }
 
     public double updateRating(Long id, double newRating) {
@@ -54,6 +49,7 @@ public class DestinationService {
         if (destination != null) {
             double updatedRating = (destination.getRating() + newRating) / 2;
             destination.setRating(updatedRating);
+            destinationRepository.save(destination);
             return updatedRating;
         }
         return 0;
